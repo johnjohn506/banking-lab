@@ -1,5 +1,6 @@
 # src/banking.py
 import logging
+from datetime import date
 
 # Configure logging
 logging.basicConfig(
@@ -170,3 +171,112 @@ class BankAccount:
             target_currency,
         )
         return converted
+
+
+# Customer class
+class Customer:
+    user_count = 0
+
+# Customer constructor
+    def __init__(self, name: str, birth_date: date) -> None:
+        if not Customer._is_adult(birth_date):
+            logger.error("Rejected customer %s: under 18", name)
+            raise ValueError("Customer must be at least 18 years old")
+        self.__name = name
+        self._user_id = Customer._next_user_id()
+        self.__accounts: list[BankAccount] = []
+
+# Is adult method
+    @staticmethod
+    def _is_adult(birth_date: date) -> bool:
+        today = date.today()
+        age = today.year - birth_date.year - (
+            (today.month, today.day) < (birth_date.month, birth_date.day)
+        )
+        return age >= 18
+
+# Next user count method
+    @staticmethod
+    def _next_user_id() -> int:
+        Customer.user_count += 1
+        return Customer.user_count
+
+# User ID property
+    @property
+    def user_id(self) -> int:
+        return self._user_id
+
+# Name property
+    @property
+    def name(self) -> str:
+        return self.__name
+
+# Accounts property
+    @property
+    def accounts(self) -> tuple[BankAccount, ...]:
+        return tuple(self.__accounts)
+
+# Validate name method
+    @staticmethod
+    def is_valid_name(name: str) -> bool:
+        return bool(name.strip())
+
+# Create customer with account method
+    @classmethod
+    def with_account(
+        cls, name: str, birth_date: date, account: BankAccount
+    ) -> "Customer":
+        customer = cls(name, birth_date)
+        customer.add_account(account)
+        return customer
+
+# Add account method
+    def add_account(self, account: BankAccount) -> None:
+        if not self.is_valid_name(self.name):
+            raise ValueError("Customer name cannot be blank")
+        if not BankAccount.is_valid_account_number(account.account_number):
+            logger.error(
+                "Rejected account %s for customer %s",
+                account.account_number,
+                self.user_id,
+            )
+            raise ValueError("Account number must be exactly 10 digits")
+        self.__accounts.append(account)
+        logger.info(
+            "Added account %s to customer %s",
+            account.account_number,
+            self.user_id,
+        )
+
+# Get total balance method
+    def get_total_balance(self) -> float:
+        total = 0.0
+        for account in self.__accounts:
+            total += account.balance
+        return total
+
+# Transfer method
+    def transfer(
+        self,
+        amount: float,
+        source_account: BankAccount,
+        target_account: BankAccount,
+    ) -> None:
+        source_ok = source_account.balance - amount >= source_account._minimum_balance()
+        target_ok = target_account.balance + amount >= target_account._minimum_balance()
+        if (
+            source_account not in self.__accounts
+            or amount < 0
+            or not source_ok
+            or not target_ok
+        ):
+            logger.error(
+                "Rejected transfer of %.2f from %s to %s for customer %s",
+                amount,
+                source_account.account_number,
+                target_account.account_number,
+                self.user_id,
+            )
+            return
+        source_account.withdraw(amount)
+        target_account.deposit(amount)
