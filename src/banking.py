@@ -1,6 +1,7 @@
 # src/banking.py
 import logging
 from datetime import date
+from typing import ClassVar
 
 # Configure logging
 logging.basicConfig(
@@ -18,12 +19,13 @@ class InsufficientFundsError(Exception):
         self.amount = amount
         super().__init__(message)
 
+
 # BankAccount class
 class BankAccount:
-    _USD_VALUE = {"USD": 1.0, "EUR": 1.08, "GBP": 1.27}
+    _USD_VALUE: ClassVar[dict[str, float]] = {"USD": 1.0, "EUR": 1.08, "GBP": 1.27}
     _SAVINGS_MINIMUM_USD = 100.0
 
-# BankAccount constructor
+    # BankAccount constructor
     def __init__(
         self,
         account_number: str,
@@ -36,7 +38,7 @@ class BankAccount:
         self._account_type = account_type
         self.balance = balance
 
-# Account number property
+    # Account number property
     @property
     def account_number(self) -> str:
         return self.__account_number
@@ -49,12 +51,12 @@ class BankAccount:
     def account_type(self) -> str:
         return self._account_type
 
-# Balance property
+    # Balance property
     @property
     def balance(self) -> float:
         return self.__balance
 
-# Balance setter
+    # Balance setter
     @balance.setter
     def balance(self, value: float) -> None:
         if value < 0:
@@ -66,18 +68,18 @@ class BankAccount:
             raise ValueError("Balance cannot be negative")
         self.__balance = value
 
-# Validate amount method
+    # Validate amount method
     @staticmethod
     def validate_amount(amount: float) -> None:
         if amount < 0:
             raise ValueError("Amount cannot be negative")
 
-# Validate account number method
+    # Validate account number method
     @staticmethod
     def is_valid_account_number(account_number: str) -> bool:
         return account_number.isdigit() and len(account_number) == 10
 
-# Validate non-negative amount method
+    # Validate non-negative amount method
     def _validate_non_negative(self, amount: float) -> None:
         if amount < 0:
             logger.error(
@@ -87,21 +89,21 @@ class BankAccount:
             )
             self.validate_amount(amount)
 
-# Minimum balance method
+    # Minimum balance method
     def _minimum_balance(self) -> float:
         if self._account_type != "savings":
             return 0.0
         usd_value = self._USD_VALUE[self.currency]
         return self._SAVINGS_MINIMUM_USD / usd_value
 
-# Open with deposit method
+    # Open with deposit method
     @classmethod
     def open_with_deposit(cls, account_number: str, amount: float) -> "BankAccount":
         account = cls(account_number)
         account.deposit(amount)
         return account
 
-# Create savings method
+    # Create savings method
     @classmethod
     def create_savings(
         cls,
@@ -121,7 +123,7 @@ class BankAccount:
             raise ValueError("Savings balance cannot be below the minimum")
         return cls(account_number, currency, account_type, balance)
 
-# Deposit method
+    # Deposit method
     def deposit(self, amount: float) -> float:
         self._validate_non_negative(amount)
         self.balance += amount
@@ -133,7 +135,7 @@ class BankAccount:
         )
         return self.balance
 
-# Withdraw method
+    # Withdraw method
     def withdraw(self, amount: float) -> float:
         self._validate_non_negative(amount)
         if self.balance - amount < self._minimum_balance():
@@ -153,7 +155,7 @@ class BankAccount:
         )
         return self.balance
 
-# Convert currency method
+    # Convert currency method
     def convert_currency(self, target_currency: str, exchange_rate: float) -> None:
         if exchange_rate <= 0:
             logger.error(
@@ -177,7 +179,7 @@ class BankAccount:
 class Customer:
     user_count = 0
 
-# Customer constructor
+    # Customer constructor
     def __init__(self, name: str, birth_date: date) -> None:
         if not Customer._is_adult(birth_date):
             logger.error("Rejected customer %s: under 18", name)
@@ -186,42 +188,44 @@ class Customer:
         self._user_id = Customer._next_user_id()
         self.__accounts: list[BankAccount] = []
 
-# Is adult method
+    # Is adult method
     @staticmethod
     def _is_adult(birth_date: date) -> bool:
         today = date.today()
-        age = today.year - birth_date.year - (
-            (today.month, today.day) < (birth_date.month, birth_date.day)
+        age = (
+            today.year
+            - birth_date.year
+            - ((today.month, today.day) < (birth_date.month, birth_date.day))
         )
         return age >= 18
 
-# Next user count method
+    # Next user count method
     @staticmethod
     def _next_user_id() -> int:
         Customer.user_count += 1
         return Customer.user_count
 
-# User ID property
+    # User ID property
     @property
     def user_id(self) -> int:
         return self._user_id
 
-# Name property
+    # Name property
     @property
     def name(self) -> str:
         return self.__name
 
-# Accounts property
+    # Accounts property
     @property
     def accounts(self) -> tuple[BankAccount, ...]:
         return tuple(self.__accounts)
 
-# Validate name method
+    # Validate name method
     @staticmethod
     def is_valid_name(name: str) -> bool:
         return bool(name.strip())
 
-# Create customer with account method
+    # Create customer with account method
     @classmethod
     def with_account(
         cls, name: str, birth_date: date, account: BankAccount
@@ -230,7 +234,7 @@ class Customer:
         customer.add_account(account)
         return customer
 
-# Add account method
+    # Add account method
     def add_account(self, account: BankAccount) -> None:
         if not self.is_valid_name(self.name):
             raise ValueError("Customer name cannot be blank")
@@ -248,14 +252,14 @@ class Customer:
             self.user_id,
         )
 
-# Get total balance method
+    # Get total balance method
     def get_total_balance(self) -> float:
         total = 0.0
         for account in self.__accounts:
             total += account.balance
         return total
 
-# Transfer method
+    # Transfer method
     def transfer(
         self,
         amount: float,
